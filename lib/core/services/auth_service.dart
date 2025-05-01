@@ -16,13 +16,16 @@ class AuthService extends ChangeNotifier {
     String password,
   ) async {
     try {
+      print('Attempting to sign in with email: $email');
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      print('Sign in successful. User ID: ${credential.user?.uid}');
       notifyListeners();
       return credential;
     } catch (e) {
+      print('Sign in error: $e');
       rethrow;
     }
   }
@@ -33,13 +36,16 @@ class AuthService extends ChangeNotifier {
     String password,
   ) async {
     try {
+      print('Attempting to create account with email: $email');
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      print('Account creation successful. User ID: ${credential.user?.uid}');
       notifyListeners();
       return credential;
     } catch (e) {
+      print('Account creation error: $e');
       rethrow;
     }
   }

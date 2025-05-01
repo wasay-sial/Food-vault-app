@@ -33,4 +33,13 @@ class UserService {
     );
     await _firestore.collection('users').doc(userId).set(profile.toMap());
   }
+
+  // Get user profile as Future
+  Future<UserProfile?> getUserProfileFuture(String userId) async {
+    final doc = await _firestore.collection('users').doc(userId).get();
+    if (doc.exists) {
+      return UserProfile.fromFirestore(doc);
+    }
+    return null;
+  }
 }

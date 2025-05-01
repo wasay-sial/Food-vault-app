@@ -1,29 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../services/auth_service.dart';
 import '../../services/recipe_service.dart';
+import '../../services/image_service.dart';
+import '../../services/user_service.dart';
 import '../../models/recipe.dart';
 import '../../theme/app_theme.dart';
 
 class AddRecipeScreen extends StatefulWidget {
-  const AddRecipeScreen({super.key});
+  final bool isEditing;
+
+  const AddRecipeScreen({super.key, this.isEditing = false});
 
   @override
-  State<AddRecipeScreen> createState() => _AddRecipeScreenState();
+  State<AddRecipeScreen> createState() => AddRecipeScreenState();
 }
 
-class _AddRecipeScreenState extends State<AddRecipeScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _cookingTimeController = TextEditingController();
-  final _servingsController = TextEditingController();
-  final _ingredientsController = TextEditingController();
-  final _instructionsController = TextEditingController();
-  final _imageUrlController = TextEditingController();
+class AddRecipeScreenState extends State<AddRecipeScreen> {
+  @protected
+  final formKey = GlobalKey<FormState>();
+  @protected
+  late final TextEditingController titleController;
+  @protected
+  late final TextEditingController descriptionController;
+  @protected
+  late final TextEditingController cookingTimeController;
+  @protected
+  late final TextEditingController servingsController;
+  @protected
+  late final TextEditingController ingredientsController;
+  @protected
+  late final TextEditingController instructionsController;
+  @protected
+  late final TextEditingController imageUrlController;
   String _difficulty = 'Medium';
-  List<String> _categories = [];
+  List<String> _selectedCategories = [];
   bool _isLoading = false;
+  String? _imageUrl;
+  final ImageService _imageService = ImageService();
+  double _uploadProgress = 0;
+  String? _errorMessage;
 
   final List<String> _availableCategories = [
     'Breakfast',
@@ -39,50 +56,137 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    titleController = TextEditingController();
+    descriptionController = TextEditingController();
+    cookingTimeController = TextEditingController();
+    servingsController = TextEditingController();
+    ingredientsController = TextEditingController();
+    instructionsController = TextEditingController();
+    imageUrlController = TextEditingController();
+  }
+
+  @override
   void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    _cookingTimeController.dispose();
-    _servingsController.dispose();
-    _ingredientsController.dispose();
-    _instructionsController.dispose();
-    _imageUrlController.dispose();
+    titleController.dispose();
+    descriptionController.dispose();
+    cookingTimeController.dispose();
+    servingsController.dispose();
+    ingredientsController.dispose();
+    instructionsController.dispose();
+    imageUrlController.dispose();
     super.dispose();
   }
 
-  Future<void> _addRecipe() async {
-    if (!_formKey.currentState!.validate()) return;
+  void _showImageSourceDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Select Image Source'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Gallery'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Camera'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+              ],
+            ),
+          ),
+    );
+  }
 
-    setState(() => _isLoading = true);
+  Future<void> _pickImage(ImageSource source) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _uploadProgress = 0;
+    });
+
+    try {
+      final imageUrl = await _imageService.pickAndUploadImage(
+        source,
+        onProgress: (progress) {
+          setState(() => _uploadProgress = progress);
+        },
+      );
+
+      if (imageUrl != null) {
+        setState(() {
+          _imageUrl = imageUrl;
+          imageUrlController.text = imageUrl;
+        });
+      }
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+        _uploadProgress = 0;
+      });
+    }
+  }
+
+  Future<void> _submitRecipe() async {
+    if (!formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     try {
       final user = Provider.of<AuthService>(context, listen: false).currentUser;
       if (user == null) throw Exception('User not authenticated');
 
+      // Get user profile to use the correct display name
+      final userProfile = await UserService().getUserProfileFuture(user.uid);
+      final displayName = userProfile?.displayName ?? 'Anonymous';
+
       final recipe = Recipe(
         id: '', // Firestore will generate this
-        title: _titleController.text,
-        description: _descriptionController.text,
+        title: titleController.text,
+        description: descriptionController.text,
         ingredients:
-            _ingredientsController.text
+            ingredientsController.text
                 .split('\n')
                 .where((line) => line.trim().isNotEmpty)
                 .toList(),
         instructions:
-            _instructionsController.text
+            instructionsController.text
                 .split('\n')
                 .where((line) => line.trim().isNotEmpty)
                 .toList(),
         imageUrl:
-            _imageUrlController.text.isEmpty
+            imageUrlController.text.isEmpty
                 ? 'https://via.placeholder.com/400x300?text=No+Image'
-                : _imageUrlController.text,
+                : imageUrlController.text,
         userId: user.uid,
-        userName: user.displayName ?? 'Anonymous',
+        userName: displayName,
         createdAt: DateTime.now(),
-        categories: _categories,
-        cookingTime: int.parse(_cookingTimeController.text),
-        servings: int.parse(_servingsController.text),
+        categories: _selectedCategories,
+        cookingTime: int.parse(cookingTimeController.text),
+        servings: int.parse(servingsController.text),
         difficulty: _difficulty,
       );
 
@@ -107,24 +211,127 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     }
   }
 
+  String get submitButtonText =>
+      widget.isEditing ? 'Update Recipe' : 'Add Recipe';
+
+  Widget _buildImageSection() {
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: _showImageSourceDialog,
+          child: Container(
+            height: 200,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(12),
+              image:
+                  _imageUrl != null
+                      ? DecorationImage(
+                        image: NetworkImage(_imageUrl!),
+                        fit: BoxFit.cover,
+                      )
+                      : null,
+            ),
+            child:
+                _imageUrl == null
+                    ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.add_photo_alternate,
+                          size: 50,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tap to add recipe image',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    )
+                    : null,
+          ),
+        ),
+        if (_isLoading)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    value: _uploadProgress > 0 ? _uploadProgress : null,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Colors.white,
+                    ),
+                  ),
+                  if (_uploadProgress > 0) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${(_uploadProgress * 100).toInt()}%',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        if (_errorMessage != null)
+          Positioned(
+            bottom: 8,
+            left: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Add New Recipe', style: AppTheme.headingStyle),
+        title: Text(
+          widget.isEditing ? 'Edit Recipe' : 'Add New Recipe',
+          style: AppTheme.headingStyle,
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
-          key: _formKey,
+          key: formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _buildImageSection(),
+              const SizedBox(height: 16),
               TextFormField(
-                controller: _titleController,
+                controller: titleController,
                 decoration: AppTheme.textFieldDecoration('Recipe Title'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -135,7 +342,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _descriptionController,
+                controller: descriptionController,
                 decoration: AppTheme.textFieldDecoration('Description'),
                 maxLines: 3,
                 validator: (value) {
@@ -150,7 +357,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                 children: [
                   Expanded(
                     child: TextFormField(
-                      controller: _cookingTimeController,
+                      controller: cookingTimeController,
                       decoration: AppTheme.textFieldDecoration(
                         'Cooking Time (min)',
                       ),
@@ -169,7 +376,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: TextFormField(
-                      controller: _servingsController,
+                      controller: servingsController,
                       decoration: AppTheme.textFieldDecoration('Servings'),
                       keyboardType: TextInputType.number,
                       validator: (value) {
@@ -206,7 +413,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _imageUrlController,
+                controller: imageUrlController,
                 decoration: AppTheme.textFieldDecoration(
                   'Image URL (Optional)',
                 ),
@@ -214,7 +421,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _ingredientsController,
+                controller: ingredientsController,
                 decoration: AppTheme.textFieldDecoration(
                   'Ingredients (one per line)',
                 ),
@@ -228,7 +435,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _instructionsController,
+                controller: instructionsController,
                 decoration: AppTheme.textFieldDecoration(
                   'Instructions (one per line)',
                 ),
@@ -247,13 +454,13 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                     _availableCategories.map((category) {
                       return FilterChip(
                         label: Text(category),
-                        selected: _categories.contains(category),
+                        selected: _selectedCategories.contains(category),
                         onSelected: (selected) {
                           setState(() {
                             if (selected) {
-                              _categories.add(category);
+                              _selectedCategories.add(category);
                             } else {
-                              _categories.remove(category);
+                              _selectedCategories.remove(category);
                             }
                           });
                         },
@@ -262,24 +469,12 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _isLoading ? null : _addRecipe,
+                onPressed: _isLoading ? null : _submitRecipe,
                 style: AppTheme.elevatedButtonStyle,
                 child:
                     _isLoading
-                        ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                        : const Text(
-                          'Add Recipe',
-                          style: AppTheme.buttonTextStyle,
-                        ),
+                        ? const CircularProgressIndicator()
+                        : Text(submitButtonText),
               ),
             ],
           ),

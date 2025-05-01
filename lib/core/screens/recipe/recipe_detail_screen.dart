@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/recipe.dart';
 import '../../theme/app_theme.dart';
 import '../../services/user_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/recipe_service.dart';
 import '../../models/user_profile.dart';
 
 class RecipeDetailScreen extends StatelessWidget {
@@ -9,8 +12,53 @@ class RecipeDetailScreen extends StatelessWidget {
 
   const RecipeDetailScreen({super.key, required this.recipe});
 
+  Future<void> _deleteRecipe(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete Recipe'),
+            content: const Text(
+              'Are you sure you want to delete this recipe? This action cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await RecipeService().deleteRecipe(recipe.id);
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Recipe deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting recipe: ${e.toString()}')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentUser = Provider.of<AuthService>(context).currentUser;
+    final isCreator = currentUser?.uid == recipe.userId;
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: CustomScrollView(
@@ -69,6 +117,15 @@ class RecipeDetailScreen extends StatelessWidget {
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => Navigator.pop(context),
             ),
+            actions:
+                isCreator
+                    ? [
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.white),
+                        onPressed: () => _deleteRecipe(context),
+                      ),
+                    ]
+                    : null,
           ),
           SliverToBoxAdapter(
             child: Container(

@@ -2,48 +2,82 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Color palette
-  static const Color primaryColor = Color(0xFF2E7D32); // Dark Green
-  static const Color secondaryColor = Color(0xFF4CAF50); // Medium Green
-  static const Color accentColor = Color(0xFF81C784); // Light Green
-  static const Color backgroundColor = Color(0xFFF1F8E9); // Very Light Green
-  static const Color surfaceColor = Colors.white;
-  static const Color textColor = Color(0xFF1B5E20); // Dark Green for text
-  static const Color errorColor = Color(0xFFD32F2F);
+  static const Color primaryColor = Color(0xFF3B4BF9); // Primary Blue
+  static const Color secondaryColor = Color(0xFF6B4BF9); // Purple Blue
+  static const Color accentColor = Color(0xFF8F6BFF); // Light Purple
+  static const Color backgroundColor = Color(
+    0xFF0A0B1E,
+  ); // Dark Blue Background
+  static const Color surfaceColor = Color(
+    0xFF1A1B2E,
+  ); // Slightly lighter surface
+  static const Color cardColor = Color(0xFF252642); // Card background
+  static const Color textColor = Colors.white;
+  static const Color errorColor = Color(0xFFFF3B3B);
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF2E7D32), Color(0xFF4CAF50)],
+    colors: [Color(0xFF3B4BF9), Color(0xFF6B4BF9)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  static const LinearGradient accentGradient = LinearGradient(
-    colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
+  static const LinearGradient backgroundGradient = LinearGradient(
+    colors: [Color(0xFF0A0B1E), Color(0xFF1A1B2E)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  static const LinearGradient cardGradient = LinearGradient(
+    colors: [Color(0xFF252642), Color(0xFF1E1F38)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient buttonGradient = LinearGradient(
-    colors: [Color(0xFF2E7D32), Color(0xFF4CAF50)],
+    colors: [Color(0xFF3B4BF9), Color(0xFF6B4BF9)],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
 
   // Glass effect
   static BoxDecoration glassDecoration = BoxDecoration(
-    color: surfaceColor.withOpacity(0.95),
+    color: surfaceColor.withOpacity(0.7),
     borderRadius: BorderRadius.circular(24),
-    border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
+    border: Border.all(color: Colors.white.withOpacity(0.1)),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.1),
+        color: primaryColor.withOpacity(0.1),
+        blurRadius: 20,
+        spreadRadius: 5,
+      ),
+    ],
+  );
+
+  // Modern card decoration
+  static BoxDecoration modernCardDecoration = BoxDecoration(
+    gradient: cardGradient,
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(color: Colors.white.withOpacity(0.1)),
+    boxShadow: [
+      BoxShadow(
+        color: primaryColor.withOpacity(0.1),
         blurRadius: 10,
         offset: const Offset(0, 4),
       ),
+    ],
+  );
+
+  // Navigation bar decoration
+  static BoxDecoration navigationBarDecoration = BoxDecoration(
+    color: surfaceColor.withOpacity(0.95),
+    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+    border: Border.all(color: Colors.white.withOpacity(0.1)),
+    boxShadow: [
       BoxShadow(
-        color: Colors.white.withOpacity(0.5),
+        color: Colors.black.withOpacity(0.2),
         blurRadius: 10,
-        offset: const Offset(0, -4),
+        offset: const Offset(0, -2),
       ),
     ],
   );
@@ -52,24 +86,24 @@ class AppTheme {
   static InputDecoration textFieldDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(
-        color: Color(0xFF4CAF50),
+      labelStyle: TextStyle(
+        color: Colors.white.withOpacity(0.7),
         fontSize: 14,
         fontFamily: 'Roboto',
       ),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.9),
+      fillColor: surfaceColor.withOpacity(0.5),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF4CAF50)),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF4CAF50)),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
+        borderSide: const BorderSide(color: primaryColor, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -85,57 +119,70 @@ class AppTheme {
 
   // Button styles
   static ButtonStyle elevatedButtonStyle = ElevatedButton.styleFrom(
-    padding: const EdgeInsets.symmetric(vertical: 12),
-    backgroundColor: const Color(0xFF2E7D32),
+    padding: const EdgeInsets.symmetric(vertical: 16),
+    backgroundColor: primaryColor,
     foregroundColor: Colors.white,
-    elevation: 3,
-    shadowColor: const Color(0xFF2E7D32).withOpacity(0.4),
+    elevation: 0,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  ).copyWith(
+    overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
+      if (states.contains(MaterialState.pressed)) {
+        return Colors.white.withOpacity(0.1);
+      }
+      return null;
+    }),
   );
 
   static ButtonStyle outlinedButtonStyle = OutlinedButton.styleFrom(
-    padding: const EdgeInsets.symmetric(vertical: 12),
-    foregroundColor: const Color(0xFF2E7D32),
-    side: const BorderSide(color: Color(0xFF2E7D32)),
+    padding: const EdgeInsets.symmetric(vertical: 16),
+    foregroundColor: Colors.white,
+    side: BorderSide(color: Colors.white.withOpacity(0.2)),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-  );
-
-  // Card decoration
-  static BoxDecoration cardDecoration = BoxDecoration(
-    color: surfaceColor,
-    borderRadius: BorderRadius.circular(16),
-    border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.1),
-        blurRadius: 10,
-        offset: const Offset(0, 4),
-      ),
-      BoxShadow(
-        color: Colors.white.withOpacity(0.5),
-        blurRadius: 10,
-        offset: const Offset(0, -4),
-      ),
-    ],
+  ).copyWith(
+    overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
+      if (states.contains(MaterialState.pressed)) {
+        return Colors.white.withOpacity(0.05);
+      }
+      return null;
+    }),
   );
 
   // Text styles
   static const TextStyle headingStyle = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.bold,
-    color: Color(0xFF1B5E20),
+    color: Colors.white,
     fontFamily: 'Roboto',
+    letterSpacing: 0.5,
   );
 
-  static const TextStyle subheadingStyle = TextStyle(
+  static TextStyle subheadingStyle = TextStyle(
     fontSize: 14,
-    color: Color(0xFF4CAF50),
+    color: Colors.white.withOpacity(0.7),
     fontFamily: 'Roboto',
+    letterSpacing: 0.25,
   );
 
   static const TextStyle buttonTextStyle = TextStyle(
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: FontWeight.w600,
+    color: Colors.white,
     fontFamily: 'Roboto',
+    letterSpacing: 0.5,
+  );
+
+  static const TextStyle cardTitleStyle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+    color: Colors.white,
+    fontFamily: 'Roboto',
+    letterSpacing: 0.5,
+  );
+
+  static TextStyle cardSubtitleStyle = TextStyle(
+    fontSize: 12,
+    color: Colors.white.withOpacity(0.7),
+    fontFamily: 'Roboto',
+    letterSpacing: 0.25,
   );
 }
