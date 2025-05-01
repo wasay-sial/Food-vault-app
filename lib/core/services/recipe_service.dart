@@ -32,6 +32,14 @@ class RecipeService {
     await _firestore.collection('recipes').add(recipe.toMap());
   }
 
+  // Update recipe
+  Future<void> updateRecipe(Recipe recipe) async {
+    await _firestore
+        .collection('recipes')
+        .doc(recipe.id)
+        .update(recipe.toMap());
+  }
+
   // Delete recipe
   Future<void> deleteRecipe(String recipeId) async {
     await _firestore.collection('recipes').doc(recipeId).delete();

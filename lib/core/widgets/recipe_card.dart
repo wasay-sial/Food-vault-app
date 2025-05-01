@@ -37,28 +37,31 @@ class RecipeCard extends StatelessWidget {
                   children: [
                     AspectRatio(
                       aspectRatio: aspectRatio,
-                      child: CachedNetworkImage(
-                        imageUrl: recipe.imageUrl,
-                        fit: BoxFit.cover,
-                        placeholder:
-                            (context, url) => Container(
-                              color: AppTheme.cardColor,
-                              child: Icon(
-                                Icons.restaurant,
-                                size: isSmallScreen ? 40 : 50,
-                                color: Colors.white.withOpacity(0.3),
+                      child: Hero(
+                        tag: 'recipe-image-${recipe.id}',
+                        child: CachedNetworkImage(
+                          imageUrl: recipe.imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder:
+                              (context, url) => Container(
+                                color: AppTheme.cardColor,
+                                child: Icon(
+                                  Icons.restaurant,
+                                  size: isSmallScreen ? 40 : 50,
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
                               ),
-                            ),
-                        errorWidget:
-                            (context, url, error) => Container(
-                              color: AppTheme.cardColor,
-                              child: Icon(
-                                Icons.restaurant,
-                                size: isSmallScreen ? 40 : 50,
-                                color: Colors.white.withOpacity(0.3),
+                          errorWidget:
+                              (context, url, error) => Container(
+                                color: AppTheme.cardColor,
+                                child: Icon(
+                                  Icons.restaurant,
+                                  size: isSmallScreen ? 40 : 50,
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
                               ),
-                            ),
-                        memCacheWidth: (screenWidth * 0.5).round(),
+                          memCacheWidth: (screenWidth * 0.5).round(),
+                        ),
                       ),
                     ),
                     Positioned(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +13,20 @@ import 'core/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Enable high refresh rate
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.edgeToEdge,
+    overlays: [SystemUiOverlay.top],
+  );
+
+  // Enable high refresh rate for the app
+  await Future.wait([
+    Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]),
+  ]);
+
   runApp(const MyApp());
 }
 
@@ -28,9 +42,10 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Community Cookbook',
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
-          colorScheme: ColorScheme.dark(
+          colorScheme: ColorScheme.light(
             primary: AppTheme.primaryColor,
             secondary: AppTheme.secondaryColor,
             surface: AppTheme.surfaceColor,
@@ -38,42 +53,42 @@ class MyApp extends StatelessWidget {
             error: AppTheme.errorColor,
             onPrimary: Colors.white,
             onSecondary: Colors.white,
-            onSurface: Colors.white,
-            onBackground: Colors.white,
+            onSurface: AppTheme.textColor,
+            onBackground: AppTheme.textColor,
             onError: Colors.white,
-            brightness: Brightness.dark,
+            brightness: Brightness.light,
           ),
           scaffoldBackgroundColor: AppTheme.backgroundColor,
-          textTheme: const TextTheme(
-            displayLarge: TextStyle(color: Colors.white),
-            displayMedium: TextStyle(color: Colors.white),
-            displaySmall: TextStyle(color: Colors.white),
-            headlineLarge: TextStyle(color: Colors.white),
-            headlineMedium: TextStyle(color: Colors.white),
-            headlineSmall: TextStyle(color: Colors.white),
-            titleLarge: TextStyle(color: Colors.white),
-            titleMedium: TextStyle(color: Colors.white),
-            titleSmall: TextStyle(color: Colors.white),
-            bodyLarge: TextStyle(color: Colors.white),
-            bodyMedium: TextStyle(color: Colors.white),
-            bodySmall: TextStyle(color: Colors.white),
-            labelLarge: TextStyle(color: Colors.white),
-            labelMedium: TextStyle(color: Colors.white),
-            labelSmall: TextStyle(color: Colors.white),
+          textTheme: TextTheme(
+            displayLarge: TextStyle(color: AppTheme.textColor),
+            displayMedium: TextStyle(color: AppTheme.textColor),
+            displaySmall: TextStyle(color: AppTheme.textColor),
+            headlineLarge: TextStyle(color: AppTheme.textColor),
+            headlineMedium: TextStyle(color: AppTheme.textColor),
+            headlineSmall: TextStyle(color: AppTheme.textColor),
+            titleLarge: TextStyle(color: AppTheme.textColor),
+            titleMedium: TextStyle(color: AppTheme.textColor),
+            titleSmall: TextStyle(color: AppTheme.textColor),
+            bodyLarge: TextStyle(color: AppTheme.textColor),
+            bodyMedium: TextStyle(color: AppTheme.textColor),
+            bodySmall: TextStyle(color: AppTheme.textColor),
+            labelLarge: TextStyle(color: AppTheme.textColor),
+            labelMedium: TextStyle(color: AppTheme.textColor),
+            labelSmall: TextStyle(color: AppTheme.textColor),
           ),
           navigationBarTheme: NavigationBarThemeData(
             backgroundColor: Colors.transparent,
             indicatorColor: AppTheme.primaryColor.withOpacity(0.2),
             labelTextStyle: MaterialStateProperty.resolveWith((states) {
               if (states.contains(MaterialState.selected)) {
-                return const TextStyle(
-                  color: Colors.white,
+                return TextStyle(
+                  color: AppTheme.textColor,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 );
               }
               return TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: AppTheme.textColor.withOpacity(0.7),
                 fontSize: 12,
               );
             }),

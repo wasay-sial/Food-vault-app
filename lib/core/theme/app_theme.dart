@@ -1,41 +1,40 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Color palette
-  static const Color primaryColor = Color(0xFF3B4BF9); // Primary Blue
-  static const Color secondaryColor = Color(0xFF6B4BF9); // Purple Blue
-  static const Color accentColor = Color(0xFF8F6BFF); // Light Purple
-  static const Color backgroundColor = Color(
-    0xFF0A0B1E,
-  ); // Dark Blue Background
-  static const Color surfaceColor = Color(
-    0xFF1A1B2E,
-  ); // Slightly lighter surface
-  static const Color cardColor = Color(0xFF252642); // Card background
-  static const Color textColor = Colors.white;
-  static const Color errorColor = Color(0xFFFF3B3B);
+  // Color palette from Olive Garden theme (vibrant version)
+  static const Color primaryColor = Color(0xFF6B7B5F); // Vibrant Sage
+  static const Color secondaryColor = Color(0xFF9E9A85); // Vibrant Sand
+  static const Color accentColor = Color(0xFF5A5A4A); // Rich Bark
+  static const Color backgroundColor = Color(0xFFFAF7EE); // Bright Parchment
+  static const Color surfaceColor = Color(0xFFF0E9DD); // Warm Sand light
+  static const Color cardColor = Color(0xFF8B9584); // Vibrant Olive
+  static const Color textColor = Color(0xFF363630); // Deep Olivewood
+  static const Color errorColor = Color(0xFFA65D2E); // Rich Saddle Brown
 
-  // Gradients
+  // Gradients with more vibrant transitions
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF3B4BF9), Color(0xFF6B4BF9)],
+    colors: [Color(0xFF6B7B5F), Color(0xFF8B9584)], // Vibrant Sage to Olive
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient backgroundGradient = LinearGradient(
-    colors: [Color(0xFF0A0B1E), Color(0xFF1A1B2E)],
+    colors: [
+      Color(0xFFFAF7EE),
+      Color(0xFFF0E9DD),
+    ], // Bright Parchment to Warm Sand
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
   static const LinearGradient cardGradient = LinearGradient(
-    colors: [Color(0xFF252642), Color(0xFF1E1F38)],
+    colors: [Color(0xFF8B9584), Color(0xFF6B7B5F)], // Vibrant Olive to Sage
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient buttonGradient = LinearGradient(
-    colors: [Color(0xFF3B4BF9), Color(0xFF6B4BF9)],
+    colors: [Color(0xFF6B7B5F), Color(0xFF5A5A4A)], // Vibrant Sage to Rich Bark
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
@@ -44,7 +43,7 @@ class AppTheme {
   static BoxDecoration glassDecoration = BoxDecoration(
     color: surfaceColor.withOpacity(0.7),
     borderRadius: BorderRadius.circular(24),
-    border: Border.all(color: Colors.white.withOpacity(0.1)),
+    border: Border.all(color: primaryColor.withOpacity(0.1)),
     boxShadow: [
       BoxShadow(
         color: primaryColor.withOpacity(0.1),
@@ -58,7 +57,7 @@ class AppTheme {
   static BoxDecoration modernCardDecoration = BoxDecoration(
     gradient: cardGradient,
     borderRadius: BorderRadius.circular(16),
-    border: Border.all(color: Colors.white.withOpacity(0.1)),
+    border: Border.all(color: primaryColor.withOpacity(0.1)),
     boxShadow: [
       BoxShadow(
         color: primaryColor.withOpacity(0.1),
@@ -72,10 +71,10 @@ class AppTheme {
   static BoxDecoration navigationBarDecoration = BoxDecoration(
     color: surfaceColor.withOpacity(0.95),
     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-    border: Border.all(color: Colors.white.withOpacity(0.1)),
+    border: Border.all(color: primaryColor.withOpacity(0.1)),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.2),
+        color: Colors.black.withOpacity(0.1),
         blurRadius: 10,
         offset: const Offset(0, -2),
       ),
@@ -87,7 +86,12 @@ class AppTheme {
     return InputDecoration(
       labelText: label,
       labelStyle: TextStyle(
-        color: Colors.white.withOpacity(0.7),
+        color: Colors.black54,
+        fontSize: 14,
+        fontFamily: 'Roboto',
+      ),
+      hintStyle: TextStyle(
+        color: Colors.black45,
         fontSize: 14,
         fontFamily: 'Roboto',
       ),
@@ -95,11 +99,11 @@ class AppTheme {
       fillColor: surfaceColor.withOpacity(0.5),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+        borderSide: BorderSide(color: primaryColor.withOpacity(0.1)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+        borderSide: BorderSide(color: primaryColor.withOpacity(0.1)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -135,13 +139,13 @@ class AppTheme {
 
   static ButtonStyle outlinedButtonStyle = OutlinedButton.styleFrom(
     padding: const EdgeInsets.symmetric(vertical: 16),
-    foregroundColor: Colors.white,
-    side: BorderSide(color: Colors.white.withOpacity(0.2)),
+    foregroundColor: textColor,
+    side: BorderSide(color: primaryColor.withOpacity(0.2)),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
   ).copyWith(
     overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
       if (states.contains(MaterialState.pressed)) {
-        return Colors.white.withOpacity(0.05);
+        return primaryColor.withOpacity(0.05);
       }
       return null;
     }),
@@ -151,14 +155,14 @@ class AppTheme {
   static const TextStyle headingStyle = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.bold,
-    color: Colors.white,
+    color: textColor,
     fontFamily: 'Roboto',
     letterSpacing: 0.5,
   );
 
   static TextStyle subheadingStyle = TextStyle(
     fontSize: 14,
-    color: Colors.white.withOpacity(0.7),
+    color: textColor.withOpacity(0.7),
     fontFamily: 'Roboto',
     letterSpacing: 0.25,
   );
@@ -181,7 +185,7 @@ class AppTheme {
 
   static TextStyle cardSubtitleStyle = TextStyle(
     fontSize: 12,
-    color: Colors.white.withOpacity(0.7),
+    color: Colors.white.withOpacity(0.9),
     fontFamily: 'Roboto',
     letterSpacing: 0.25,
   );

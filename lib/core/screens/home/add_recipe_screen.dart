@@ -1,23 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import '../../services/auth_service.dart';
 import '../../services/recipe_service.dart';
 import '../../services/image_service.dart';
 import '../../services/user_service.dart';
 import '../../models/recipe.dart';
 import '../../theme/app_theme.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class AddRecipeScreen extends StatefulWidget {
   final bool isEditing;
+  final Recipe? existingRecipe;
 
-  const AddRecipeScreen({super.key, this.isEditing = false});
+  const AddRecipeScreen({
+    super.key,
+    this.isEditing = false,
+    this.existingRecipe,
+  });
 
   @override
   State<AddRecipeScreen> createState() => AddRecipeScreenState();
 }
 
-class AddRecipeScreenState extends State<AddRecipeScreen> {
+class AddRecipeScreenState extends State<AddRecipeScreen>
+    with SingleTickerProviderStateMixin {
   @protected
   final formKey = GlobalKey<FormState>();
   @protected
@@ -41,6 +49,8 @@ class AddRecipeScreenState extends State<AddRecipeScreen> {
   final ImageService _imageService = ImageService();
   double _uploadProgress = 0;
   String? _errorMessage;
+  late AnimationController _keyboardAnimationController;
+  late Animation<double> _keyboardAnimation;
 
   final List<String> _availableCategories = [
     'Breakfast',
@@ -58,6 +68,35 @@ class AddRecipeScreenState extends State<AddRecipeScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeControllers();
+    _setupKeyboardAnimation();
+
+    if (widget.existingRecipe != null) {
+      _populateExistingRecipe();
+    }
+  }
+
+  void _setupKeyboardAnimation() {
+    _keyboardAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _keyboardAnimation = CurvedAnimation(
+      parent: _keyboardAnimationController,
+      curve: Curves.easeOutExpo,
+      reverseCurve: Curves.easeInExpo,
+    );
+
+    KeyboardVisibilityController().onChange.listen((bool visible) {
+      if (visible) {
+        _keyboardAnimationController.forward();
+      } else {
+        _keyboardAnimationController.reverse();
+      }
+    });
+  }
+
+  void _initializeControllers() {
     titleController = TextEditingController();
     descriptionController = TextEditingController();
     cookingTimeController = TextEditingController();
@@ -67,16 +106,15 @@ class AddRecipeScreenState extends State<AddRecipeScreen> {
     imageUrlController = TextEditingController();
   }
 
-  @override
-  void dispose() {
-    titleController.dispose();
-    descriptionController.dispose();
-    cookingTimeController.dispose();
-    servingsController.dispose();
-    ingredientsController.dispose();
-    instructionsController.dispose();
-    imageUrlController.dispose();
-    super.dispose();
+  void _populateExistingRecipe() {
+    final recipe = widget.existingRecipe!;
+    titleController.text = recipe.title;
+    descriptionController.text = recipe.description;
+    cookingTimeController.text = recipe.cookingTime.toString();
+    servingsController.text = recipe.servings.toString();
+    _imageUrl = recipe.imageUrl;
+    _difficulty = recipe.difficulty;
+    _selectedCategories = List.from(recipe.categories);
   }
 
   void _showImageSourceDialog() {
@@ -164,7 +202,7 @@ class AddRecipeScreenState extends State<AddRecipeScreen> {
       final displayName = userProfile?.displayName ?? 'Anonymous';
 
       final recipe = Recipe(
-        id: '', // Firestore will generate this
+        id: widget.isEditing ? widget.existingRecipe!.id : '',
         title: titleController.text,
         description: descriptionController.text,
         ingredients:
@@ -183,18 +221,25 @@ class AddRecipeScreenState extends State<AddRecipeScreen> {
                 : imageUrlController.text,
         userId: user.uid,
         userName: displayName,
-        createdAt: DateTime.now(),
+        createdAt:
+            widget.isEditing
+                ? widget.existingRecipe!.createdAt
+                : DateTime.now(),
         categories: _selectedCategories,
         cookingTime: int.parse(cookingTimeController.text),
         servings: int.parse(servingsController.text),
         difficulty: _difficulty,
       );
 
-      await RecipeService().addRecipe(recipe);
+      if (widget.isEditing) {
+        await RecipeService().updateRecipe(recipe);
+      } else {
+        await RecipeService().addRecipe(recipe);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Recipe added successfully!')),
+          const SnackBar(content: Text('Recipe saved successfully!')),
         );
         Navigator.pop(context);
       }
@@ -215,97 +260,72 @@ class AddRecipeScreenState extends State<AddRecipeScreen> {
       widget.isEditing ? 'Update Recipe' : 'Add Recipe';
 
   Widget _buildImageSection() {
-    return Stack(
-      children: [
-        GestureDetector(
-          onTap: _showImageSourceDialog,
-          child: Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(12),
-              image:
-                  _imageUrl != null
-                      ? DecorationImage(
-                        image: NetworkImage(_imageUrl!),
-                        fit: BoxFit.cover,
-                      )
-                      : null,
-            ),
-            child:
-                _imageUrl == null
-                    ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.add_photo_alternate,
-                          size: 50,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Tap to add recipe image',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    )
-                    : null,
-          ),
+    return GestureDetector(
+      onTap: _showImageSourceDialog,
+      child: Container(
+        height: 200,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.primaryColor.withOpacity(0.1)),
         ),
-        if (_isLoading)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    value: _uploadProgress > 0 ? _uploadProgress : null,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Colors.white,
+        child:
+            _imageUrl != null
+                ? Hero(
+                  tag: widget.existingRecipe?.id ?? 'new-recipe-image',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CachedNetworkImage(
+                          imageUrl: _imageUrl!,
+                          fit: BoxFit.cover,
+                          placeholder:
+                              (context, url) => const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                          errorWidget:
+                              (context, url, error) => const Icon(
+                                Icons.error_outline,
+                                size: 50,
+                                color: AppTheme.errorColor,
+                              ),
+                        ),
+                        if (_uploadProgress > 0 && _uploadProgress < 1)
+                          Container(
+                            color: Colors.black54,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: _uploadProgress,
+                                color: AppTheme.primaryColor,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  if (_uploadProgress > 0) ...[
+                )
+                : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.add_photo_alternate_outlined,
+                      size: 50,
+                      color: AppTheme.primaryColor.withOpacity(0.5),
+                    ),
                     const SizedBox(height: 8),
                     Text(
-                      '${(_uploadProgress * 100).toInt()}%',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      'Add Recipe Photo',
+                      style: TextStyle(
+                        color: AppTheme.primaryColor.withOpacity(0.5),
                         fontSize: 16,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
-                ],
-              ),
-            ),
-          ),
-        if (_errorMessage != null)
-          Positioned(
-            bottom: 8,
-            left: 8,
-            right: 8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.8),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-      ],
+                ),
+      ),
     );
   }
 
@@ -321,165 +341,261 @@ class AddRecipeScreenState extends State<AddRecipeScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildImageSection(),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: titleController,
-                decoration: AppTheme.textFieldDecoration('Recipe Title'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: descriptionController,
-                decoration: AppTheme.textFieldDecoration('Description'),
-                maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a description';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: cookingTimeController,
-                      decoration: AppTheme.textFieldDecoration(
-                        'Cooking Time (min)',
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Required';
-                        }
-                        if (int.tryParse(value) == null) {
-                          return 'Invalid number';
-                        }
-                        return null;
-                      },
-                    ),
+      body: AnimatedBuilder(
+        animation: _keyboardAnimation,
+        builder: (context, child) {
+          final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+          return TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutExpo,
+            tween: Tween<double>(begin: 0, end: bottomPadding),
+            builder:
+                (context, value, child) => SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(
+                    decelerationRate: ScrollDecelerationRate.fast,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: servingsController,
-                      decoration: AppTheme.textFieldDecoration('Servings'),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Required';
-                        }
-                        if (int.tryParse(value) == null) {
-                          return 'Invalid number';
-                        }
-                        return null;
-                      },
-                    ),
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 16,
+                    bottom: 16 + (value * _keyboardAnimation.value),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _difficulty,
-                decoration: AppTheme.textFieldDecoration('Difficulty'),
-                items:
-                    ['Easy', 'Medium', 'Hard']
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TweenAnimationBuilder<double>(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutExpo,
+                          tween: Tween<double>(
+                            begin: 0,
+                            end: _keyboardAnimation.value,
                           ),
-                        )
-                        .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _difficulty = value);
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: imageUrlController,
-                decoration: AppTheme.textFieldDecoration(
-                  'Image URL (Optional)',
+                          builder:
+                              (context, value, child) => Transform.translate(
+                                offset: Offset(0, -50 * value),
+                                child: Opacity(
+                                  opacity: 1 - (value * 0.2),
+                                  child: _buildImageSection(),
+                                ),
+                              ),
+                        ),
+                        const SizedBox(height: 16),
+                        TweenAnimationBuilder<double>(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutExpo,
+                          tween: Tween<double>(
+                            begin: 0,
+                            end: _keyboardAnimation.value,
+                          ),
+                          builder:
+                              (context, value, child) => Transform.translate(
+                                offset: Offset(0, -30 * value),
+                                child: Opacity(
+                                  opacity: 1 - (value * 0.1),
+                                  child: Column(
+                                    children: [
+                                      TextFormField(
+                                        controller: titleController,
+                                        decoration:
+                                            AppTheme.textFieldDecoration(
+                                              'Recipe Title',
+                                            ),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Please enter a title';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                      const SizedBox(height: 16),
+                                      TextFormField(
+                                        controller: descriptionController,
+                                        decoration:
+                                            AppTheme.textFieldDecoration(
+                                              'Description',
+                                            ),
+                                        maxLines: 3,
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Please enter a description';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: TextFormField(
+                                              controller: cookingTimeController,
+                                              decoration:
+                                                  AppTheme.textFieldDecoration(
+                                                    'Cooking Time (min)',
+                                                  ),
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.isEmpty) {
+                                                  return 'Required';
+                                                }
+                                                if (int.tryParse(value) ==
+                                                    null) {
+                                                  return 'Invalid number';
+                                                }
+                                                return null;
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: TextFormField(
+                                              controller: servingsController,
+                                              decoration:
+                                                  AppTheme.textFieldDecoration(
+                                                    'Servings',
+                                                  ),
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.isEmpty) {
+                                                  return 'Required';
+                                                }
+                                                if (int.tryParse(value) ==
+                                                    null) {
+                                                  return 'Invalid number';
+                                                }
+                                                return null;
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      DropdownButtonFormField<String>(
+                                        value: _difficulty,
+                                        decoration:
+                                            AppTheme.textFieldDecoration(
+                                              'Difficulty',
+                                            ),
+                                        items:
+                                            ['Easy', 'Medium', 'Hard']
+                                                .map(
+                                                  (value) => DropdownMenuItem(
+                                                    value: value,
+                                                    child: Text(value),
+                                                  ),
+                                                )
+                                                .toList(),
+                                        onChanged: (value) {
+                                          if (value != null) {
+                                            setState(() => _difficulty = value);
+                                          }
+                                        },
+                                      ),
+                                      const SizedBox(height: 16),
+                                      TextFormField(
+                                        controller: imageUrlController,
+                                        decoration:
+                                            AppTheme.textFieldDecoration(
+                                              'Image URL (Optional)',
+                                            ),
+                                        validator: null,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      TextFormField(
+                                        controller: ingredientsController,
+                                        decoration:
+                                            AppTheme.textFieldDecoration(
+                                              'Ingredients (one per line)',
+                                            ),
+                                        maxLines: 5,
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Please enter ingredients';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                      const SizedBox(height: 16),
+                                      TextFormField(
+                                        controller: instructionsController,
+                                        decoration:
+                                            AppTheme.textFieldDecoration(
+                                              'Instructions (one per line)',
+                                            ),
+                                        maxLines: 5,
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Please enter instructions';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Wrap(
+                                        spacing: 8,
+                                        children:
+                                            _availableCategories.map((
+                                              category,
+                                            ) {
+                                              return FilterChip(
+                                                label: Text(category),
+                                                selected: _selectedCategories
+                                                    .contains(category),
+                                                onSelected: (selected) {
+                                                  setState(() {
+                                                    if (selected) {
+                                                      _selectedCategories.add(
+                                                        category,
+                                                      );
+                                                    } else {
+                                                      _selectedCategories
+                                                          .remove(category);
+                                                    }
+                                                  });
+                                                },
+                                              );
+                                            }).toList(),
+                                      ),
+                                      const SizedBox(height: 24),
+                                      ElevatedButton(
+                                        onPressed:
+                                            _isLoading ? null : _submitRecipe,
+                                        style: AppTheme.elevatedButtonStyle,
+                                        child:
+                                            _isLoading
+                                                ? const CircularProgressIndicator()
+                                                : Text(submitButtonText),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                validator: null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: ingredientsController,
-                decoration: AppTheme.textFieldDecoration(
-                  'Ingredients (one per line)',
-                ),
-                maxLines: 5,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter ingredients';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: instructionsController,
-                decoration: AppTheme.textFieldDecoration(
-                  'Instructions (one per line)',
-                ),
-                maxLines: 5,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter instructions';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                children:
-                    _availableCategories.map((category) {
-                      return FilterChip(
-                        label: Text(category),
-                        selected: _selectedCategories.contains(category),
-                        onSelected: (selected) {
-                          setState(() {
-                            if (selected) {
-                              _selectedCategories.add(category);
-                            } else {
-                              _selectedCategories.remove(category);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _submitRecipe,
-                style: AppTheme.elevatedButtonStyle,
-                child:
-                    _isLoading
-                        ? const CircularProgressIndicator()
-                        : Text(submitButtonText),
-              ),
-            ],
-          ),
-        ),
+          );
+        },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    descriptionController.dispose();
+    cookingTimeController.dispose();
+    servingsController.dispose();
+    ingredientsController.dispose();
+    instructionsController.dispose();
+    imageUrlController.dispose();
+    _keyboardAnimationController.dispose();
+    super.dispose();
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/recipe.dart';
 import '../../theme/app_theme.dart';
 import '../../services/user_service.dart';
@@ -9,8 +10,9 @@ import '../../models/user_profile.dart';
 
 class RecipeDetailScreen extends StatelessWidget {
   final Recipe recipe;
+  final RecipeService _recipeService = RecipeService();
 
-  const RecipeDetailScreen({super.key, required this.recipe});
+  RecipeDetailScreen({super.key, required this.recipe});
 
   Future<void> _deleteRecipe(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -37,7 +39,7 @@ class RecipeDetailScreen extends StatelessWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        await RecipeService().deleteRecipe(recipe.id);
+        await _recipeService.deleteRecipe(recipe.id);
         if (context.mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -79,19 +81,30 @@ class RecipeDetailScreen extends StatelessWidget {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(
-                    recipe.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(
-                          Icons.restaurant,
-                          size: 50,
-                          color: Colors.grey,
-                        ),
-                      );
-                    },
+                  Hero(
+                    tag: 'recipe-image-${recipe.id}',
+                    child: CachedNetworkImage(
+                      imageUrl: recipe.imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder:
+                          (context, url) => Container(
+                            color: AppTheme.cardColor,
+                            child: const Icon(
+                              Icons.restaurant,
+                              size: 50,
+                              color: Colors.white54,
+                            ),
+                          ),
+                      errorWidget:
+                          (context, url, error) => Container(
+                            color: AppTheme.cardColor,
+                            child: const Icon(
+                              Icons.restaurant,
+                              size: 50,
+                              color: Colors.white54,
+                            ),
+                          ),
+                    ),
                   ),
                   // Add a gradient overlay for better text visibility
                   DecoratedBox(

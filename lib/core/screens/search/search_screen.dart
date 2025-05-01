@@ -15,18 +15,24 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenState extends State<SearchScreen>
+    with AutomaticKeepAliveClientMixin {
   final _searchController = TextEditingController();
   final _recipeService = RecipeService();
   final _userService = UserService();
-  List<Recipe> _allRecipes = [];
-  List<Recipe> _filteredRecipes = [];
-  List<String> _selectedCategories = [];
-  bool _isLoading = false;
-  bool _isSearchingByCreator = false;
-  bool _hasSearched = false;
+  final ValueNotifier<List<Recipe>> _allRecipesNotifier =
+      ValueNotifier<List<Recipe>>([]);
+  final ValueNotifier<List<Recipe>> _filteredRecipesNotifier =
+      ValueNotifier<List<Recipe>>([]);
+  final ValueNotifier<List<String>> _selectedCategoriesNotifier =
+      ValueNotifier<List<String>>([]);
+  final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _isSearchingByCreatorNotifier = ValueNotifier<bool>(
+    false,
+  );
+  final ValueNotifier<bool> _hasSearchedNotifier = ValueNotifier<bool>(false);
 
-  final List<String> _categories = [
+  static const _categories = [
     'Breakfast',
     'Lunch',
     'Dinner',
@@ -39,6 +45,9 @@ class _SearchScreenState extends State<SearchScreen> {
   ];
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
     _loadRecipes();
@@ -47,36 +56,35 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _allRecipesNotifier.dispose();
+    _filteredRecipesNotifier.dispose();
+    _selectedCategoriesNotifier.dispose();
+    _isLoadingNotifier.dispose();
+    _isSearchingByCreatorNotifier.dispose();
+    _hasSearchedNotifier.dispose();
     super.dispose();
   }
 
   Future<void> _loadRecipes() async {
     _recipeService.getRecipes().listen((recipes) {
-      setState(() {
-        _allRecipes = recipes;
-      });
+      _allRecipesNotifier.value = recipes;
     });
   }
 
   void _filterRecipes(String query) async {
-    if (query.isEmpty && _selectedCategories.isEmpty) {
-      setState(() {
-        _filteredRecipes = [];
-        _hasSearched = false;
-        _isLoading = false;
-      });
+    if (query.isEmpty && _selectedCategoriesNotifier.value.isEmpty) {
+      _filteredRecipesNotifier.value = [];
+      _hasSearchedNotifier.value = false;
+      _isLoadingNotifier.value = false;
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _hasSearched = true;
-    });
+    _isLoadingNotifier.value = true;
+    _hasSearchedNotifier.value = true;
 
-    if (_isSearchingByCreator) {
-      // Search by creator name
+    if (_isSearchingByCreatorNotifier.value) {
       final List<Recipe> creatorResults = [];
-      for (final recipe in _allRecipes) {
+      for (final recipe in _allRecipesNotifier.value) {
         final userProfile = await _userService.getUserProfileFuture(
           recipe.userId,
         );
@@ -87,285 +95,328 @@ class _SearchScreenState extends State<SearchScreen> {
           creatorResults.add(recipe);
         }
       }
-      if (mounted) {
-        setState(() {
-          _filteredRecipes = creatorResults;
-          if (_selectedCategories.isNotEmpty) {
-            _filteredRecipes =
-                _filteredRecipes
-                    .where(
-                      (recipe) => recipe.categories.any(
-                        (category) => _selectedCategories.contains(category),
-                      ),
-                    )
-                    .toList();
-          }
-        });
+
+      if (!mounted) return;
+
+      var filtered = creatorResults;
+      if (_selectedCategoriesNotifier.value.isNotEmpty) {
+        filtered =
+            filtered
+                .where(
+                  (recipe) => recipe.categories.any(
+                    (category) =>
+                        _selectedCategoriesNotifier.value.contains(category),
+                  ),
+                )
+                .toList();
       }
+      _filteredRecipesNotifier.value = filtered;
     } else {
-      // Search by recipe name
-      if (mounted) {
-        setState(() {
-          _filteredRecipes =
-              _allRecipes
-                  .where(
-                    (recipe) => recipe.title.toLowerCase().contains(
-                      query.toLowerCase(),
-                    ),
-                  )
-                  .toList();
-          if (_selectedCategories.isNotEmpty) {
-            _filteredRecipes =
-                _filteredRecipes
-                    .where(
-                      (recipe) => recipe.categories.any(
-                        (category) => _selectedCategories.contains(category),
-                      ),
-                    )
-                    .toList();
-          }
-        });
+      if (!mounted) return;
+
+      var filtered =
+          _allRecipesNotifier.value
+              .where(
+                (recipe) =>
+                    recipe.title.toLowerCase().contains(query.toLowerCase()),
+              )
+              .toList();
+
+      if (_selectedCategoriesNotifier.value.isNotEmpty) {
+        filtered =
+            filtered
+                .where(
+                  (recipe) => recipe.categories.any(
+                    (category) =>
+                        _selectedCategoriesNotifier.value.contains(category),
+                  ),
+                )
+                .toList();
       }
+      _filteredRecipesNotifier.value = filtered;
     }
 
     if (mounted) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  int _getColumnCount(double width) {
-    if (width < 600) {
-      return 2; // Compact width: 2 columns for better visibility on phones
-    } else if (width < 840) {
-      return 3; // Medium width: 3 columns
-    } else {
-      return 4; // Expanded width: 4 columns
+      _isLoadingNotifier.value = false;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final horizontalPadding = screenWidth < 600 ? 8.0 : 16.0;
+    super.build(context);
 
-    return SafeArea(
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor.withOpacity(0.95),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(16),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Search bar with reduced height
-                Container(
-                  height: 48, // Standard Android touch target
-                  decoration: BoxDecoration(
-                    color: AppTheme.cardColor.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 16),
-                      Icon(
-                        Icons.search,
-                        color: Colors.white.withOpacity(0.7),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
-                          decoration: InputDecoration(
-                            hintText:
-                                _isSearchingByCreator
-                                    ? 'Search by creator name...'
-                                    : 'Search recipes...',
-                            hintStyle: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
-                              fontSize: 16,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                            ),
-                          ),
-                          onChanged: _filterRecipes,
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          _isSearchingByCreator
-                              ? Icons.person
-                              : Icons.restaurant,
-                          color: Colors.white.withOpacity(0.7),
-                          size: 20,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isSearchingByCreator = !_isSearchingByCreator;
-                            _searchController.clear();
-                            _filterRecipes('');
-                          });
-                        },
-                        tooltip:
-                            _isSearchingByCreator
-                                ? 'Search by recipe name'
-                                : 'Search by creator',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Category filters with reduced height
-                SizedBox(
-                  height: 32,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _categories.length,
-                    itemBuilder: (context, index) {
-                      final category = _categories[index];
-                      final isSelected = _selectedCategories.contains(category);
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(
-                            category,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              if (selected) {
-                                _selectedCategories.add(category);
-                              } else {
-                                _selectedCategories.remove(category);
-                              }
-                              _filterRecipes(_searchController.text);
-                            });
-                          },
-                          backgroundColor: AppTheme.cardColor.withOpacity(0.5),
-                          selectedColor: AppTheme.primaryColor,
-                          checkmarkColor: Colors.white,
-                          showCheckmark: false,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(
-                              color:
-                                  isSelected
-                                      ? AppTheme.primaryColor
-                                      : Colors.white.withOpacity(0.1),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _SearchHeaderDelegate(
+            searchController: _searchController,
+            isSearchingByCreator: _isSearchingByCreatorNotifier,
+            selectedCategories: _selectedCategoriesNotifier,
+            onSearch: _filterRecipes,
+            categories: _categories,
           ),
-          Expanded(
-            child:
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : !_hasSearched
-                    ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.search,
-                            size: 48,
-                            color: Colors.white.withOpacity(0.3),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Search for recipes or creators',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                    : _filteredRecipes.isEmpty
-                    ? Center(
-                      child: Text(
-                        'No recipes found',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 14,
-                        ),
-                      ),
-                    )
-                    : Padding(
-                      padding: EdgeInsets.all(horizontalPadding),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final columnCount = _getColumnCount(
-                            constraints.maxWidth,
-                          );
+        ),
+        ValueListenableBuilder<bool>(
+          valueListenable: _isLoadingNotifier,
+          builder: (context, isLoading, _) {
+            if (isLoading) {
+              return const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
 
-                          return MasonryGridView.count(
-                            crossAxisCount: columnCount,
-                            mainAxisSpacing: 8,
-                            crossAxisSpacing: 8,
-                            itemCount: _filteredRecipes.length,
-                            itemBuilder: (context, index) {
-                              final recipe = _filteredRecipes[index];
-                              final aspectRatio = index % 2 == 0 ? 0.8 : 1.0;
-                              return RecipeCard(
-                                recipe: recipe,
-                                onTap:
-                                    () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (context) => RecipeDetailScreen(
-                                              recipe: recipe,
-                                            ),
-                                      ),
-                                    ),
-                                aspectRatio: aspectRatio,
-                              );
-                            },
+            return ValueListenableBuilder<bool>(
+              valueListenable: _hasSearchedNotifier,
+              builder: (context, hasSearched, _) {
+                if (!hasSearched) {
+                  return const SliverFillRemaining(child: _EmptySearchState());
+                }
+
+                return ValueListenableBuilder<List<Recipe>>(
+                  valueListenable: _filteredRecipesNotifier,
+                  builder: (context, recipes, _) {
+                    if (recipes.isEmpty) {
+                      return const SliverFillRemaining(
+                        child: _NoResultsState(),
+                      );
+                    }
+
+                    return SliverPadding(
+                      padding: EdgeInsets.all(
+                        MediaQuery.of(context).size.width < 600 ? 8.0 : 16.0,
+                      ),
+                      sliver: SliverMasonryGrid.count(
+                        crossAxisCount: _getColumnCount(
+                          MediaQuery.of(context).size.width,
+                        ),
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        childCount: recipes.length,
+                        itemBuilder: (context, index) {
+                          final recipe = recipes[index];
+                          return RepaintBoundary(
+                            child: RecipeCard(
+                              key: ValueKey(recipe.id),
+                              recipe: recipe,
+                              onTap: () => _navigateToRecipe(context, recipe),
+                              aspectRatio: index % 2 == 0 ? 0.8 : 1.0,
+                            ),
                           );
                         },
                       ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  void _navigateToRecipe(BuildContext context, Recipe recipe) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RecipeDetailScreen(recipe: recipe),
+      ),
+    );
+  }
+
+  int _getColumnCount(double width) {
+    if (width < 600) return 2;
+    if (width < 840) return 3;
+    return 4;
+  }
+}
+
+class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final TextEditingController searchController;
+  final ValueNotifier<bool> isSearchingByCreator;
+  final ValueNotifier<List<String>> selectedCategories;
+  final Function(String) onSearch;
+  final List<String> categories;
+
+  const _SearchHeaderDelegate({
+    required this.searchController,
+    required this.isSearchingByCreator,
+    required this.selectedCategories,
+    required this.onSearch,
+    required this.categories,
+  });
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: AppTheme.surfaceColor.withOpacity(0.95),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [_buildSearchBar(), _buildCategoryList()],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: AppTheme.cardColor.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withOpacity(0.1)),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 16),
+            const Icon(Icons.search, color: Colors.black87, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ValueListenableBuilder<bool>(
+                valueListenable: isSearchingByCreator,
+                builder: (context, isSearchingByCreator, _) {
+                  return TextField(
+                    controller: searchController,
+                    style: const TextStyle(color: Colors.black87, fontSize: 16),
+                    decoration: InputDecoration(
+                      hintText:
+                          isSearchingByCreator
+                              ? 'Search by creator name...'
+                              : 'Search recipes...',
+                      hintStyle: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 16,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
                     ),
+                    onChanged: onSearch,
+                  );
+                },
+              ),
+            ),
+            ValueListenableBuilder<bool>(
+              valueListenable: isSearchingByCreator,
+              builder: (context, value, _) {
+                return IconButton(
+                  icon: Icon(
+                    value ? Icons.person : Icons.restaurant,
+                    color: Colors.black54,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    isSearchingByCreator.value = !value;
+                    searchController.clear();
+                    onSearch('');
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryList() {
+    return SizedBox(
+      height: 32,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length,
+        itemBuilder: (context, index) {
+          final category = categories[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ValueListenableBuilder<List<String>>(
+              valueListenable: selectedCategories,
+              builder: (context, selected, _) {
+                final isSelected = selected.contains(category);
+                return FilterChip(
+                  label: Text(
+                    category,
+                    style: TextStyle(
+                      color: isSelected ? Colors.black87 : Colors.black54,
+                      fontSize: 12,
+                    ),
+                  ),
+                  selected: isSelected,
+                  onSelected: (value) {
+                    final newCategories = List<String>.from(selected);
+                    if (value) {
+                      newCategories.add(category);
+                    } else {
+                      newCategories.remove(category);
+                    }
+                    selectedCategories.value = newCategories;
+                    onSearch(searchController.text);
+                  },
+                  backgroundColor: AppTheme.cardColor.withOpacity(0.5),
+                  selectedColor: AppTheme.primaryColor,
+                  checkmarkColor: Colors.white,
+                  showCheckmark: false,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  double get maxExtent => 96;
+
+  @override
+  double get minExtent => 96;
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) =>
+      false;
+}
+
+class _EmptySearchState extends StatelessWidget {
+  const _EmptySearchState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.search, size: 48, color: Colors.black38),
+          const SizedBox(height: 16),
+          const Text(
+            'Search for recipes or creators',
+            style: TextStyle(color: Colors.black54, fontSize: 14),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _NoResultsState extends StatelessWidget {
+  const _NoResultsState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'No recipes found',
+        style: TextStyle(color: Colors.black54, fontSize: 14),
       ),
     );
   }
