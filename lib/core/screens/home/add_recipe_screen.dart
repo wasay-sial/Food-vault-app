@@ -406,6 +406,11 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                           if (value == null || value.isEmpty) {
                                             return 'Please enter a title';
                                           }
+                                          if (value.contains(
+                                            RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+                                          )) {
+                                            return 'Title cannot contain special characters';
+                                          }
                                           return null;
                                         },
                                       ),
@@ -420,6 +425,11 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                         validator: (value) {
                                           if (value == null || value.isEmpty) {
                                             return 'Please enter a description';
+                                          }
+                                          if (value.contains(
+                                            RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+                                          )) {
+                                            return 'Description cannot contain special characters';
                                           }
                                           return null;
                                         },
@@ -445,6 +455,9 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                                     null) {
                                                   return 'Invalid number';
                                                 }
+                                                if (int.parse(value) <= 0) {
+                                                  return 'Cooking time must be positive';
+                                                }
                                                 return null;
                                               },
                                             ),
@@ -467,6 +480,9 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                                 if (int.tryParse(value) ==
                                                     null) {
                                                   return 'Invalid number';
+                                                }
+                                                if (int.parse(value) <= 0) {
+                                                  return 'Servings must be positive';
                                                 }
                                                 return null;
                                               },
@@ -517,6 +533,11 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                           if (value == null || value.isEmpty) {
                                             return 'Please enter ingredients';
                                           }
+                                          if (value.contains(
+                                            RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+                                          )) {
+                                            return 'Ingredients cannot contain special characters';
+                                          }
                                           return null;
                                         },
                                       ),
@@ -531,6 +552,11 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                         validator: (value) {
                                           if (value == null || value.isEmpty) {
                                             return 'Please enter instructions';
+                                          }
+                                          if (value.contains(
+                                            RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+                                          )) {
+                                            return 'Instructions cannot contain special characters';
                                           }
                                           return null;
                                         },

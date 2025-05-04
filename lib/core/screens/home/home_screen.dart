@@ -221,10 +221,13 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   child: Row(
                     children: [
-                      const Text(
-                        'Community Cookbook',
-                        style: AppTheme.headingStyle,
+                      Image.asset(
+                        'assets/images/app_icon.png',
+                        height: 32,
+                        width: 32,
                       ),
+                      const SizedBox(width: 8),
+                      const Text('Food Vault', style: AppTheme.headingStyle),
                       const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.logout, color: Colors.black87),

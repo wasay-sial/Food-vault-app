@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
         Provider<UserService>(create: (_) => UserService()),
       ],
       child: MaterialApp(
-        title: 'Community Cookbook',
+        title: 'Food Vault',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
