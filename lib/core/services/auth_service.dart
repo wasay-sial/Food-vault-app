@@ -68,6 +68,17 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Delete user account
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      await user.delete();
+      notifyListeners();
+    } else {
+      throw Exception('No user is currently signed in');
+    }
+  }
+
   Future<void> changePassword(
     String currentPassword,
     String newPassword,

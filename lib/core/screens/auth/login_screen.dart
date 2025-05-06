@@ -197,15 +197,17 @@ class _LoginScreenState extends State<LoginScreen>
                             TextFormField(
                               controller: _emailController,
                               decoration: AppTheme.textFieldDecoration(
-                                'Email or Phone',
+                                'Email',
                               ).copyWith(
                                 prefixIcon: Icon(
                                   Icons.email_outlined,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: AppTheme.primaryColor,
                                 ),
                               ),
                               keyboardType: TextInputType.emailAddress,
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(
+                                color: AppTheme.primaryColor,
+                              ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your email';
@@ -221,14 +223,14 @@ class _LoginScreenState extends State<LoginScreen>
                               ).copyWith(
                                 prefixIcon: Icon(
                                   Icons.lock_outline,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: AppTheme.primaryColor,
                                 ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
-                                    color: Colors.white.withOpacity(0.7),
+                                    color: AppTheme.primaryColor,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -238,7 +240,9 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ),
                               obscureText: _obscurePassword,
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(
+                                color: AppTheme.primaryColor,
+                              ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your password';

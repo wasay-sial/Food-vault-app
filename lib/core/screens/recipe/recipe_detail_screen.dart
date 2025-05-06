@@ -1,18 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../models/recipe.dart';
 import '../../theme/app_theme.dart';
 import '../../services/user_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/recipe_service.dart';
 import '../../models/user_profile.dart';
+import '../../widgets/recipe_card.dart';
 
-class RecipeDetailScreen extends StatelessWidget {
+class RecipeDetailScreen extends StatefulWidget {
   final Recipe recipe;
-  final RecipeService _recipeService = RecipeService();
 
-  RecipeDetailScreen({super.key, required this.recipe});
+  const RecipeDetailScreen({super.key, required this.recipe});
+
+  @override
+  State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
+}
+
+class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
+  final RecipeService _recipeService = RecipeService();
+  final List<Recipe> _displayedRecipes = [];
+  bool _isLoadingMore = false;
+  bool _hasMoreRecipes = true;
+  static const int _initialLoadCount = 3;
+  static const int _loadMoreCount = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialRecipes();
+  }
+
+  Future<void> _loadInitialRecipes() async {
+    final recipes =
+        await _recipeService.getRecipesByUser(widget.recipe.userId).first;
+    final filteredRecipes =
+        recipes.where((r) => r.id != widget.recipe.id).toList();
+
+    setState(() {
+      _displayedRecipes.clear();
+      if (filteredRecipes.length > _initialLoadCount) {
+        _displayedRecipes.addAll(filteredRecipes.take(_initialLoadCount));
+        _hasMoreRecipes = true;
+      } else {
+        _displayedRecipes.addAll(filteredRecipes);
+        _hasMoreRecipes = false;
+      }
+    });
+  }
+
+  Future<void> _loadMoreRecipes() async {
+    if (_isLoadingMore || !_hasMoreRecipes) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    final recipes =
+        await _recipeService.getRecipesByUser(widget.recipe.userId).first;
+    final filteredRecipes =
+        recipes.where((r) => r.id != widget.recipe.id).toList();
+
+    setState(() {
+      final currentLength = _displayedRecipes.length;
+      final remainingRecipes =
+          filteredRecipes.skip(currentLength).take(_loadMoreCount).toList();
+
+      _displayedRecipes.addAll(remainingRecipes);
+      _hasMoreRecipes = _displayedRecipes.length < filteredRecipes.length;
+      _isLoadingMore = false;
+    });
+  }
 
   Future<void> _deleteRecipe(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -39,7 +99,7 @@ class RecipeDetailScreen extends StatelessWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        await _recipeService.deleteRecipe(recipe.id);
+        await _recipeService.deleteRecipe(widget.recipe.id);
         if (context.mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -59,7 +119,7 @@ class RecipeDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUser = Provider.of<AuthService>(context).currentUser;
-    final isCreator = currentUser?.uid == recipe.userId;
+    final isCreator = currentUser?.uid == widget.recipe.userId;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -71,20 +131,28 @@ class RecipeDetailScreen extends StatelessWidget {
             backgroundColor: Colors.black.withOpacity(0.7),
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                recipe.title,
+                widget.recipe.title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black54,
+                      offset: Offset(0, 1),
+                      blurRadius: 2,
+                    ),
+                  ],
                 ),
               ),
               background: Stack(
                 fit: StackFit.expand,
                 children: [
                   Hero(
-                    tag: 'recipe-image-${recipe.id}',
+                    tag: 'recipe-image-${widget.recipe.id}',
                     child: CachedNetworkImage(
-                      imageUrl: recipe.imageUrl,
+                      imageUrl: widget.recipe.imageUrl,
                       fit: BoxFit.cover,
                       placeholder:
                           (context, url) => Container(
@@ -106,7 +174,6 @@ class RecipeDetailScreen extends StatelessWidget {
                           ),
                     ),
                   ),
-                  // Add a gradient overlay for better text visibility
                   DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -148,7 +215,7 @@ class RecipeDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   StreamBuilder<UserProfile?>(
-                    stream: UserService().getUserProfile(recipe.userId),
+                    stream: UserService().getUserProfile(widget.recipe.userId),
                     builder: (context, snapshot) {
                       final displayName =
                           snapshot.data?.displayName ?? 'Anonymous';
@@ -171,7 +238,7 @@ class RecipeDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${recipe.cookingTime} minutes',
+                        '${widget.recipe.cookingTime} minutes',
                         style: TextStyle(
                           color: AppTheme.textColor.withOpacity(0.7),
                           fontSize: 16,
@@ -185,7 +252,7 @@ class RecipeDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Serves ${recipe.servings}',
+                        'Serves ${widget.recipe.servings}',
                         style: TextStyle(
                           color: AppTheme.textColor.withOpacity(0.7),
                           fontSize: 16,
@@ -204,7 +271,7 @@ class RecipeDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    recipe.description,
+                    widget.recipe.description,
                     style: const TextStyle(
                       color: AppTheme.textColor,
                       fontSize: 16,
@@ -224,7 +291,7 @@ class RecipeDetailScreen extends StatelessWidget {
                   ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: recipe.ingredients.length,
+                    itemCount: widget.recipe.ingredients.length,
                     itemBuilder: (context, index) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -238,7 +305,7 @@ class RecipeDetailScreen extends StatelessWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                recipe.ingredients[index],
+                                widget.recipe.ingredients[index],
                                 style: const TextStyle(
                                   color: AppTheme.textColor,
                                   fontSize: 16,
@@ -263,7 +330,7 @@ class RecipeDetailScreen extends StatelessWidget {
                   ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: recipe.instructions.length,
+                    itemCount: widget.recipe.instructions.length,
                     itemBuilder: (context, index) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -290,7 +357,7 @@ class RecipeDetailScreen extends StatelessWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                recipe.instructions[index],
+                                widget.recipe.instructions[index],
                                 style: const TextStyle(
                                   color: AppTheme.textColor,
                                   fontSize: 16,
@@ -303,6 +370,91 @@ class RecipeDetailScreen extends StatelessWidget {
                       );
                     },
                   ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'More Recipes by This Creator',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_displayedRecipes.isEmpty)
+                    Center(
+                      child: Text(
+                        'No other recipes by this creator',
+                        style: TextStyle(
+                          color: AppTheme.textColor.withOpacity(0.7),
+                          fontSize: 16,
+                        ),
+                      ),
+                    )
+                  else
+                    Column(
+                      children: [
+                        MasonryGridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 3,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          itemCount: _displayedRecipes.length,
+                          itemBuilder: (context, index) {
+                            final otherRecipe = _displayedRecipes[index];
+                            final aspectRatio = index % 2 == 0 ? 1.2 : 1.3;
+                            return RecipeCard(
+                              recipe: otherRecipe,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => RecipeDetailScreen(
+                                          recipe: otherRecipe,
+                                        ),
+                                  ),
+                                );
+                              },
+                              aspectRatio: aspectRatio,
+                            );
+                          },
+                        ),
+                        if (_hasMoreRecipes)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: ElevatedButton(
+                              onPressed:
+                                  _isLoadingMore ? null : _loadMoreRecipes,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 32,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child:
+                                  _isLoadingMore
+                                      ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                      : const Text('Load More Recipes'),
+                            ),
+                          ),
+                      ],
+                    ),
                 ],
               ),
             ),

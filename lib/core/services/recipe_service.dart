@@ -82,4 +82,30 @@ class RecipeService {
           return snapshot.docs.map((doc) => Recipe.fromFirestore(doc)).toList();
         });
   }
+
+  // Get recipes by user ID
+  Stream<List<Recipe>> getRecipesByUser(String userId) {
+    return _firestore
+        .collection('recipes')
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) => Recipe.fromFirestore(doc)).toList();
+        });
+  }
+
+  // Delete all recipes by user ID
+  Future<void> deleteAllRecipesByUser(String userId) async {
+    final snapshot =
+        await _firestore
+            .collection('recipes')
+            .where('userId', isEqualTo: userId)
+            .get();
+    final batch = _firestore.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+  }
 }

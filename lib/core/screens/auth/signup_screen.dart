@@ -200,11 +200,13 @@ class _SignUpScreenState extends State<SignUpScreen>
                               ).copyWith(
                                 prefixIcon: Icon(
                                   Icons.email_outlined,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: AppTheme.primaryColor,
                                 ),
                               ),
                               keyboardType: TextInputType.emailAddress,
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(
+                                color: AppTheme.primaryColor,
+                              ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your email';
@@ -223,10 +225,12 @@ class _SignUpScreenState extends State<SignUpScreen>
                               ).copyWith(
                                 prefixIcon: Icon(
                                   Icons.person_outline,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: AppTheme.primaryColor,
                                 ),
                               ),
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(
+                                color: AppTheme.primaryColor,
+                              ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your display name';
@@ -242,11 +246,13 @@ class _SignUpScreenState extends State<SignUpScreen>
                               ).copyWith(
                                 prefixIcon: Icon(
                                   Icons.cake_outlined,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: AppTheme.primaryColor,
                                 ),
                               ),
                               keyboardType: TextInputType.number,
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(
+                                color: AppTheme.primaryColor,
+                              ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your age';
@@ -265,12 +271,14 @@ class _SignUpScreenState extends State<SignUpScreen>
                               ).copyWith(
                                 prefixIcon: Icon(
                                   Icons.description_outlined,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: AppTheme.primaryColor,
                                 ),
                                 alignLabelWithHint: true,
                               ),
-                              maxLines: 3,
-                              style: const TextStyle(color: Colors.white),
+                              maxLines: 1,
+                              style: const TextStyle(
+                                color: AppTheme.primaryColor,
+                              ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please write something about yourself';
@@ -286,14 +294,14 @@ class _SignUpScreenState extends State<SignUpScreen>
                               ).copyWith(
                                 prefixIcon: Icon(
                                   Icons.lock_outline,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: AppTheme.primaryColor,
                                 ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
-                                    color: Colors.white.withOpacity(0.7),
+                                    color: AppTheme.primaryColor,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -303,7 +311,9 @@ class _SignUpScreenState extends State<SignUpScreen>
                                 ),
                               ),
                               obscureText: _obscurePassword,
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(
+                                color: AppTheme.primaryColor,
+                              ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your password';
@@ -322,14 +332,14 @@ class _SignUpScreenState extends State<SignUpScreen>
                               ).copyWith(
                                 prefixIcon: Icon(
                                   Icons.lock_outline,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: AppTheme.primaryColor,
                                 ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscureConfirmPassword
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
-                                    color: Colors.white.withOpacity(0.7),
+                                    color: AppTheme.primaryColor,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -340,7 +350,9 @@ class _SignUpScreenState extends State<SignUpScreen>
                                 ),
                               ),
                               obscureText: _obscureConfirmPassword,
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(
+                                color: AppTheme.primaryColor,
+                              ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please confirm your password';

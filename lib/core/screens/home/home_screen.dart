@@ -13,6 +13,7 @@ import '../../models/user_profile.dart';
 import '../../widgets/recipe_card.dart';
 import '../recipe/recipe_detail_screen.dart';
 import '../search/search_screen.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +28,8 @@ class _HomeScreenState extends State<HomeScreen>
   late final AnimationController _editButtonController;
   final RecipeService _recipeService = RecipeService();
   final UserService _userService = UserService();
+
+  final GlobalKey<CurvedNavigationBarState> _bottomNavKey = GlobalKey();
 
   // Cached widgets
   late final _searchScreen = const SearchScreen();
@@ -156,6 +159,21 @@ class _HomeScreenState extends State<HomeScreen>
         return _buildRecipeGrid(recipes, context);
       },
     );
+  }
+
+  // Helper to map between navigation bar index and selected index
+  int _navIndexFromSelected(int selected) {
+    // 0: Home, 1: Search, 2: My Recipes, 3: Profile
+    // Nav bar: 0: Home, 1: Search, 2: Add, 3: My Recipes, 4: Profile
+    if (selected < 2) return selected;
+    return selected + 1;
+  }
+
+  int _selectedFromNavIndex(int navIndex) {
+    if (navIndex < 2) return navIndex;
+    if (navIndex > 2) return navIndex - 1;
+    // navIndex == 2 is the Add button
+    return -1;
   }
 
   @override
@@ -426,6 +444,176 @@ class _HomeScreenState extends State<HomeScreen>
                                           ),
                                         ],
                                       ),
+                                      const SizedBox(height: 24),
+                                      ElevatedButton.icon(
+                                        icon: const Icon(Icons.delete_forever),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
+                                        label: const Text('Delete Profile'),
+                                        onPressed: () async {
+                                          bool confirmed = await showDialog(
+                                            context: context,
+                                            builder:
+                                                (context) => AlertDialog(
+                                                  title: const Text(
+                                                    'Delete Account?',
+                                                  ),
+                                                  content: const Text(
+                                                    'Are you sure you want to delete your account? This action cannot be undone.',
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed:
+                                                          () => Navigator.pop(
+                                                            context,
+                                                            false,
+                                                          ),
+                                                      child: const Text(
+                                                        'Cancel',
+                                                      ),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed:
+                                                          () => Navigator.pop(
+                                                            context,
+                                                            true,
+                                                          ),
+                                                      child: const Text(
+                                                        'Yes, Continue',
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                          );
+                                          if (!confirmed) return;
+                                          confirmed = await showDialog(
+                                            context: context,
+                                            builder:
+                                                (context) => AlertDialog(
+                                                  title: const Text(
+                                                    'Are You Really Sure?',
+                                                  ),
+                                                  content: const Text(
+                                                    'Deleting your account will remove all your recipes and data. This cannot be undone.',
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed:
+                                                          () => Navigator.pop(
+                                                            context,
+                                                            false,
+                                                          ),
+                                                      child: const Text(
+                                                        'Cancel',
+                                                      ),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed:
+                                                          () => Navigator.pop(
+                                                            context,
+                                                            true,
+                                                          ),
+                                                      child: const Text(
+                                                        'Yes, Continue',
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                          );
+                                          if (!confirmed) return;
+                                          confirmed = await showDialog(
+                                            context: context,
+                                            builder:
+                                                (context) => AlertDialog(
+                                                  title: const Text(
+                                                    'Final Warning!',
+                                                  ),
+                                                  content: const Text(
+                                                    'This is your last chance. Deleting your account will permanently erase all your recipes and cannot be undone. Do you want to proceed?',
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed:
+                                                          () => Navigator.pop(
+                                                            context,
+                                                            false,
+                                                          ),
+                                                      child: const Text(
+                                                        'Cancel',
+                                                      ),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed:
+                                                          () => Navigator.pop(
+                                                            context,
+                                                            true,
+                                                          ),
+                                                      child: const Text(
+                                                        'Yes, Delete Everything',
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                          );
+                                          if (!confirmed) return;
+                                          try {
+                                            final authService =
+                                                Provider.of<AuthService>(
+                                                  context,
+                                                  listen: false,
+                                                );
+                                            final recipeService =
+                                                RecipeService();
+                                            final userId =
+                                                authService.currentUser?.uid;
+                                            if (userId != null) {
+                                              await recipeService
+                                                  .deleteAllRecipesByUser(
+                                                    userId,
+                                                  );
+                                            }
+                                            await authService.deleteAccount();
+                                            if (mounted) {
+                                              Navigator.pushReplacementNamed(
+                                                context,
+                                                '/login',
+                                              );
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Account and all recipes deleted.',
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Error deleting account: ${e.toString()}',
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -441,65 +629,96 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ],
         ),
-        bottomNavigationBar: Container(
-          decoration: AppTheme.navigationBarDecoration,
-          child: NavigationBar(
-            height: 64,
-            backgroundColor: Colors.transparent,
-            indicatorColor: AppTheme.primaryColor.withOpacity(0.2),
-            selectedIndex: _selectedIndex,
-            onDestinationSelected:
-                (index) => setState(() => _selectedIndex = index),
-            labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined, color: Colors.black54),
-                selectedIcon: Icon(Icons.home, color: Colors.black87),
-                label: 'Home',
+        bottomNavigationBar: CurvedNavigationBar(
+          key: _bottomNavKey,
+          index: _navIndexFromSelected(_selectedIndex),
+          height: 65.0,
+          backgroundColor: Colors.transparent,
+          color: AppTheme.primaryColor,
+          buttonBackgroundColor: AppTheme.primaryColor,
+          animationCurve: Curves.bounceInOut,
+          animationDuration: const Duration(milliseconds: 200),
+          items: <Widget>[
+            AnimatedScale(
+              scale: _selectedIndex == 0 ? 1.2 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                Icons.home,
+                size: 30,
+                color:
+                    _selectedIndex == 0
+                        ? Colors.white
+                        : Colors.white.withOpacity(0.7),
               ),
-              NavigationDestination(
-                icon: Icon(Icons.search_outlined, color: Colors.black54),
-                selectedIcon: Icon(Icons.search, color: Colors.black87),
-                label: 'Search',
+            ),
+            AnimatedScale(
+              scale: _selectedIndex == 1 ? 1.2 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                Icons.search,
+                size: 30,
+                color:
+                    _selectedIndex == 1
+                        ? Colors.white
+                        : Colors.white.withOpacity(0.7),
               ),
-              NavigationDestination(
-                icon: Icon(Icons.book_outlined, color: Colors.black54),
-                selectedIcon: Icon(Icons.book, color: Colors.black87),
-                label: 'My Recipes',
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              NavigationDestination(
-                icon: Icon(Icons.person_outline, color: Colors.black54),
-                selectedIcon: Icon(Icons.person, color: Colors.black87),
-                label: 'Profile',
+              child: Icon(Icons.add, size: 36, color: Colors.white),
+            ),
+            AnimatedScale(
+              scale: _selectedIndex == 2 ? 1.2 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                Icons.book_outlined,
+                size: 30,
+                color:
+                    _selectedIndex == 2
+                        ? Colors.white
+                        : Colors.white.withOpacity(0.7),
               ),
-            ],
-          ),
-        ),
-        floatingActionButton: Container(
-          decoration: BoxDecoration(
-            gradient: AppTheme.primaryGradient,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+            ),
+            AnimatedScale(
+              scale: _selectedIndex == 3 ? 1.2 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                Icons.person_outline,
+                size: 30,
+                color:
+                    _selectedIndex == 3
+                        ? Colors.white
+                        : Colors.white.withOpacity(0.7),
               ),
-            ],
-          ),
-          child: FloatingActionButton(
-            onPressed: () {
+            ),
+          ],
+          onTap: (navIndex) {
+            if (navIndex == 2) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const AddRecipeScreen(),
                 ),
               );
-            },
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            child: const Icon(Icons.add, color: Colors.white),
-          ),
+            } else {
+              final newSelected = _selectedFromNavIndex(navIndex);
+              if (newSelected != -1) {
+                setState(() {
+                  _selectedIndex = newSelected;
+                });
+              }
+            }
+          },
         ),
       ),
     );

@@ -407,9 +407,11 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                             return 'Please enter a title';
                                           }
                                           if (value.contains(
-                                            RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+                                            RegExp(
+                                              r'[^a-zA-Z0-9\s,\-/\u2013\u2014]',
+                                            ),
                                           )) {
-                                            return 'Title cannot contain special characters';
+                                            return 'Title can only contain letters, numbers, spaces, commas, hyphens, dashes, and forward slashes';
                                           }
                                           return null;
                                         },
@@ -427,9 +429,11 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                             return 'Please enter a description';
                                           }
                                           if (value.contains(
-                                            RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+                                            RegExp(
+                                              r'[^a-zA-Z0-9\s,\-/\u2013\u2014]',
+                                            ),
                                           )) {
-                                            return 'Description cannot contain special characters';
+                                            return 'Description can only contain letters, numbers, spaces, commas, hyphens, dashes, and forward slashes';
                                           }
                                           return null;
                                         },
@@ -455,8 +459,13 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                                     null) {
                                                   return 'Invalid number';
                                                 }
-                                                if (int.parse(value) <= 0) {
+                                                final number = int.parse(value);
+                                                if (number <= 0) {
                                                   return 'Cooking time must be positive';
+                                                }
+                                                if (number > 1440) {
+                                                  // 24 hours in minutes
+                                                  return 'Cooking time cannot exceed 24 hours';
                                                 }
                                                 return null;
                                               },
@@ -481,8 +490,12 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                                     null) {
                                                   return 'Invalid number';
                                                 }
-                                                if (int.parse(value) <= 0) {
+                                                final number = int.parse(value);
+                                                if (number <= 0) {
                                                   return 'Servings must be positive';
+                                                }
+                                                if (number > 100) {
+                                                  return 'Servings cannot exceed 100';
                                                 }
                                                 return null;
                                               },
@@ -534,9 +547,11 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                             return 'Please enter ingredients';
                                           }
                                           if (value.contains(
-                                            RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+                                            RegExp(
+                                              r'[^a-zA-Z0-9\s,\-/\u2013\u2014]',
+                                            ),
                                           )) {
-                                            return 'Ingredients cannot contain special characters';
+                                            return 'Ingredients can only contain letters, numbers, spaces, commas, hyphens, dashes, and forward slashes';
                                           }
                                           return null;
                                         },
@@ -554,9 +569,11 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                             return 'Please enter instructions';
                                           }
                                           if (value.contains(
-                                            RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+                                            RegExp(
+                                              r'[^a-zA-Z0-9\s,\-/\u2013\u2014]',
+                                            ),
                                           )) {
-                                            return 'Instructions cannot contain special characters';
+                                            return 'Instructions can only contain letters, numbers, spaces, commas, hyphens, dashes, and forward slashes';
                                           }
                                           return null;
                                         },
