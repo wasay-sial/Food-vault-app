@@ -308,51 +308,6 @@ class _HomeScreenState extends State<HomeScreen>
                       const SizedBox(width: 8),
                       const Text('Food Vault', style: AppTheme.headingStyle),
                       const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.logout, color: Colors.black87),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder:
-                                (context) => AlertDialog(
-                                  backgroundColor: AppTheme.surfaceColor,
-                                  title: const Text(
-                                    'Confirm Logout',
-                                    style: TextStyle(color: Colors.black87),
-                                  ),
-                                  content: const Text(
-                                    'Are you sure you want to logout?',
-                                    style: TextStyle(color: Colors.black54),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text(
-                                        'Cancel',
-                                        style: TextStyle(color: Colors.black54),
-                                      ),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        Provider.of<AuthService>(
-                                          context,
-                                          listen: false,
-                                        ).signOut();
-                                      },
-                                      child: const Text(
-                                        'Logout',
-                                        style: TextStyle(
-                                          color: Colors.black87,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                          );
-                        },
-                      ),
                     ],
                   ),
                 ),
@@ -440,6 +395,74 @@ class _HomeScreenState extends State<HomeScreen>
                                                       (context) =>
                                                           const EditProfileScreen(),
                                                 ),
+                                              );
+                                            },
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.logout),
+                                            color: Colors.black87,
+                                            tooltip: 'Logout',
+                                            onPressed: () {
+                                              showDialog(
+                                                context: context,
+                                                builder:
+                                                    (context) => AlertDialog(
+                                                      backgroundColor:
+                                                          AppTheme.surfaceColor,
+                                                      title: const Text(
+                                                        'Confirm Logout',
+                                                        style: TextStyle(
+                                                          color: Colors.black87,
+                                                        ),
+                                                      ),
+                                                      content: const Text(
+                                                        'Are you sure you want to logout?',
+                                                        style: TextStyle(
+                                                          color: Colors.black54,
+                                                        ),
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed:
+                                                              () =>
+                                                                  Navigator.pop(
+                                                                    context,
+                                                                  ),
+                                                          child: const Text(
+                                                            'Cancel',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors
+                                                                      .black54,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        TextButton(
+                                                          onPressed: () {
+                                                            Navigator.pop(
+                                                              context,
+                                                            );
+                                                            Provider.of<
+                                                              AuthService
+                                                            >(
+                                                              context,
+                                                              listen: false,
+                                                            ).signOut();
+                                                          },
+                                                          child: const Text(
+                                                            'Logout',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors
+                                                                      .black87,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                               );
                                             },
                                           ),
