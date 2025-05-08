@@ -52,27 +52,37 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildRecipeGrid(List<Recipe> recipes, BuildContext context) {
     if (recipes.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('No recipes yet', style: AppTheme.headingStyle),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AddRecipeScreen(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('No recipes yet', style: AppTheme.headingStyle),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddRecipeScreen(),
+                      ),
+                    );
+                  },
+                  style: AppTheme.elevatedButtonStyle.copyWith(
+                    padding: MaterialStateProperty.all(
+                      const EdgeInsets.symmetric(vertical: 16.0),
+                    ),
                   ),
-                );
-              },
-              style: AppTheme.elevatedButtonStyle,
-              child: const Text(
-                'Add First Recipe',
-                style: AppTheme.buttonTextStyle,
+                  child: const Text(
+                    'Add First Recipe',
+                    style: AppTheme.buttonTextStyle,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -156,6 +166,57 @@ class _HomeScreenState extends State<HomeScreen>
         }
 
         final recipes = snapshot.data ?? [];
+        if (recipes.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 32.0,
+                vertical: 24.0,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'No recipes yet',
+                    style: AppTheme.headingStyle,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AddRecipeScreen(),
+                          ),
+                        );
+                      },
+                      style: AppTheme.elevatedButtonStyle.copyWith(
+                        padding: MaterialStateProperty.all(
+                          const EdgeInsets.symmetric(
+                            horizontal: 48.0,
+                            vertical: 16.0,
+                          ),
+                        ),
+                        shape: MaterialStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                      ),
+                      child: const Text(
+                        'Add Your First Recipe',
+                        style: AppTheme.buttonTextStyle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         return _buildRecipeGrid(recipes, context);
       },
     );
@@ -445,174 +506,169 @@ class _HomeScreenState extends State<HomeScreen>
                                         ],
                                       ),
                                       const SizedBox(height: 24),
-                                      ElevatedButton.icon(
-                                        icon: const Icon(Icons.delete_forever),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 24,
-                                            vertical: 12,
+                                      // Add a red bin icon in the bottom right corner
+                                      Align(
+                                        alignment: Alignment.bottomRight,
+                                        child: IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                            size: 32,
                                           ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                        ),
-                                        label: const Text('Delete Profile'),
-                                        onPressed: () async {
-                                          bool confirmed = await showDialog(
-                                            context: context,
-                                            builder:
-                                                (context) => AlertDialog(
-                                                  title: const Text(
-                                                    'Delete Account?',
-                                                  ),
-                                                  content: const Text(
-                                                    'Are you sure you want to delete your account? This action cannot be undone.',
-                                                  ),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed:
-                                                          () => Navigator.pop(
-                                                            context,
-                                                            false,
-                                                          ),
-                                                      child: const Text(
-                                                        'Cancel',
-                                                      ),
+                                          tooltip: 'Delete Profile',
+                                          onPressed: () async {
+                                            bool confirmed = await showDialog(
+                                              context: context,
+                                              builder:
+                                                  (context) => AlertDialog(
+                                                    title: const Text(
+                                                      'Delete Account?',
                                                     ),
-                                                    TextButton(
-                                                      onPressed:
-                                                          () => Navigator.pop(
-                                                            context,
-                                                            true,
-                                                          ),
-                                                      child: const Text(
-                                                        'Yes, Continue',
-                                                      ),
+                                                    content: const Text(
+                                                      'Are you sure you want to delete your account? This action cannot be undone.',
                                                     ),
-                                                  ],
-                                                ),
-                                          );
-                                          if (!confirmed) return;
-                                          confirmed = await showDialog(
-                                            context: context,
-                                            builder:
-                                                (context) => AlertDialog(
-                                                  title: const Text(
-                                                    'Are You Really Sure?',
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              context,
+                                                              false,
+                                                            ),
+                                                        child: const Text(
+                                                          'Cancel',
+                                                        ),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              context,
+                                                              true,
+                                                            ),
+                                                        child: const Text(
+                                                          'Yes, Continue',
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  content: const Text(
-                                                    'Deleting your account will remove all your recipes and data. This cannot be undone.',
+                                            );
+                                            if (!confirmed) return;
+                                            confirmed = await showDialog(
+                                              context: context,
+                                              builder:
+                                                  (context) => AlertDialog(
+                                                    title: const Text(
+                                                      'Are You Really Sure?',
+                                                    ),
+                                                    content: const Text(
+                                                      'Deleting your account will remove all your recipes and data. This cannot be undone.',
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              context,
+                                                              false,
+                                                            ),
+                                                        child: const Text(
+                                                          'Cancel',
+                                                        ),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              context,
+                                                              true,
+                                                            ),
+                                                        child: const Text(
+                                                          'Yes, Continue',
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed:
-                                                          () => Navigator.pop(
-                                                            context,
-                                                            false,
-                                                          ),
-                                                      child: const Text(
-                                                        'Cancel',
-                                                      ),
+                                            );
+                                            if (!confirmed) return;
+                                            confirmed = await showDialog(
+                                              context: context,
+                                              builder:
+                                                  (context) => AlertDialog(
+                                                    title: const Text(
+                                                      'Final Warning!',
                                                     ),
-                                                    TextButton(
-                                                      onPressed:
-                                                          () => Navigator.pop(
-                                                            context,
-                                                            true,
-                                                          ),
-                                                      child: const Text(
-                                                        'Yes, Continue',
-                                                      ),
+                                                    content: const Text(
+                                                      'This is your last chance. Deleting your account will permanently erase all your recipes and cannot be undone. Do you want to proceed?',
                                                     ),
-                                                  ],
-                                                ),
-                                          );
-                                          if (!confirmed) return;
-                                          confirmed = await showDialog(
-                                            context: context,
-                                            builder:
-                                                (context) => AlertDialog(
-                                                  title: const Text(
-                                                    'Final Warning!',
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              context,
+                                                              false,
+                                                            ),
+                                                        child: const Text(
+                                                          'Cancel',
+                                                        ),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              context,
+                                                              true,
+                                                            ),
+                                                        child: const Text(
+                                                          'Yes, Delete Everything',
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  content: const Text(
-                                                    'This is your last chance. Deleting your account will permanently erase all your recipes and cannot be undone. Do you want to proceed?',
-                                                  ),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed:
-                                                          () => Navigator.pop(
-                                                            context,
-                                                            false,
-                                                          ),
-                                                      child: const Text(
-                                                        'Cancel',
-                                                      ),
-                                                    ),
-                                                    TextButton(
-                                                      onPressed:
-                                                          () => Navigator.pop(
-                                                            context,
-                                                            true,
-                                                          ),
-                                                      child: const Text(
-                                                        'Yes, Delete Everything',
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                          );
-                                          if (!confirmed) return;
-                                          try {
-                                            final authService =
-                                                Provider.of<AuthService>(
-                                                  context,
-                                                  listen: false,
-                                                );
-                                            final recipeService =
-                                                RecipeService();
-                                            final userId =
-                                                authService.currentUser?.uid;
-                                            if (userId != null) {
-                                              await recipeService
-                                                  .deleteAllRecipesByUser(
-                                                    userId,
+                                            );
+                                            if (!confirmed) return;
+                                            try {
+                                              final authService =
+                                                  Provider.of<AuthService>(
+                                                    context,
+                                                    listen: false,
                                                   );
-                                            }
-                                            await authService.deleteAccount();
-                                            if (mounted) {
-                                              Navigator.pushReplacementNamed(
-                                                context,
-                                                '/login',
-                                              );
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                    'Account and all recipes deleted.',
+                                              final recipeService =
+                                                  RecipeService();
+                                              final userId =
+                                                  authService.currentUser?.uid;
+                                              if (userId != null) {
+                                                await recipeService
+                                                    .deleteAllRecipesByUser(
+                                                      userId,
+                                                    );
+                                              }
+                                              await authService.deleteAccount();
+                                              if (mounted) {
+                                                Navigator.pushReplacementNamed(
+                                                  context,
+                                                  '/login',
+                                                );
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'Account and all recipes deleted.',
+                                                    ),
                                                   ),
-                                                ),
-                                              );
-                                            }
-                                          } catch (e) {
-                                            if (mounted) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Error deleting account: ${e.toString()}',
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      'Error deleting account: ${e.toString()}',
+                                                    ),
                                                   ),
-                                                ),
-                                              );
+                                                );
+                                              }
                                             }
-                                          }
-                                        },
+                                          },
+                                        ),
                                       ),
                                     ],
                                   ),

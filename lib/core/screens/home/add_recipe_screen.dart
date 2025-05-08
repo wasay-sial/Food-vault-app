@@ -579,6 +579,18 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                         },
                                       ),
                                       const SizedBox(height: 16),
+                                      const Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          'Categories',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.textColor,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
                                       Wrap(
                                         spacing: 8,
                                         children:
@@ -608,11 +620,30 @@ class AddRecipeScreenState extends State<AddRecipeScreen>
                                       ElevatedButton(
                                         onPressed:
                                             _isLoading ? null : _submitRecipe,
-                                        style: AppTheme.elevatedButtonStyle,
+                                        style: AppTheme.elevatedButtonStyle
+                                            .copyWith(
+                                              padding:
+                                                  MaterialStateProperty.all(
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 48.0,
+                                                      vertical: 16.0,
+                                                    ),
+                                                  ),
+                                              shape: MaterialStateProperty.all(
+                                                RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(30),
+                                                ),
+                                              ),
+                                            ),
                                         child:
                                             _isLoading
                                                 ? const CircularProgressIndicator()
-                                                : Text(submitButtonText),
+                                                : Text(
+                                                  submitButtonText,
+                                                  style:
+                                                      AppTheme.buttonTextStyle,
+                                                ),
                                       ),
                                     ],
                                   ),
