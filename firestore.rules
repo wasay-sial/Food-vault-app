@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update, delete: if isOwner(userId);
+    }
+    
+    // Recipes
+    match /recipes/{recipeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Ratings subcollection - more permissive rules
+      match /ratings/{ratingId} {
+        allow read: if isAuthenticated();
+        // Allow any authenticated user to create a rating
+        allow create: if isAuthenticated();
+        // Allow users to update/delete only their own ratings
+        allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      }
+    }
+    
+    // Profile pictures metadata
+    match /profile_pictures/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+    
+    // Verification codes for email verification and password reset
+    match /verificationCodes/{email} {
+      allow create, update, read, delete: if true; // For demo/dev only!
+    }
+    
+    // Default deny
+    match /{document=} {
+      allow read, write: if false;
+    }
+  }
+} 
