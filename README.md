@@ -78,15 +78,6 @@ Add a GIF or video demo here. Example:
 
 ---
 
-## 🖼️ Screenshots
-
-| Home Feed | Recipe Detail | Add Recipe | Profile |
-|-----------|--------------|------------|---------|
-| ![](assets/images/screenshot_home.png) | ![](assets/images/screenshot_detail.png) | ![](assets/images/screenshot_add.png) | ![](assets/images/screenshot_profile.png) |
-
-> _Add your own screenshots in `assets/images/` and update the table above!_
-
----
 
 ## 🚀 Getting Started
 
